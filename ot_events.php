@@ -43,7 +43,30 @@ class Imprint_Events
 		add_shortcode("events", array($this, "shortcode"));
 		// initializes the widget on WordPress Load
 		add_action('widgets_init', array($this, 'widget_init'));
+		/* hook updater to init */
+		add_action( 'init', 'mybooks_plugin_updater_init' );
 	}
+
+	/**
+	 * Load and Activate Plugin Updater Class.
+	 */
+	function events_plugin_updater_init() {
+		/* Load Plugin Updater */
+		require_once( trailingslashit( plugin_dir_path( __FILE__ ) ) . 'includes/plugin-updater.php' );
+
+		/* Updater Config */
+		$config = array(
+			'base'      => plugin_basename( __FILE__ ), //required
+			'username'    => true, // user login name in your site.
+			'dashboard'   => true,
+			'repo_uri'  => 'http://outthinkgroup.com/',
+			'repo_slug' => 'outthink-events',
+		);
+
+		/* Load Updater Class */
+		new OTEvents_Plugin_Updater( $config );
+	}
+	
 	function init() {
 		//Adding Custom Post Type called "Events"
 		register_post_type($this->post_type,
