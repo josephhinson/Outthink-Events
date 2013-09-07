@@ -1,33 +1,33 @@
 <?php 
-/*
-Plugin Name: Out:Think Events
-Plugin URI: http://outthinkgroup.com/
-Description: This plugin provides a simple interface to add events in an upcoming list.
-Version: 1.0
-Author: Joseph Hinson
-Author URI: http://outthinkgroup.com
-
-    Copyright 2011 - Out:think Group  (email : joseph@outthinkgroup.com)
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+/**
+* Plugin Name: Out:Think Events
+* Plugin URI: http://outthinkgroup.com/
+* Description: This plugin provides a simple interface to add events in an upcoming list.
+* Version: 1.0
+* Author: Joseph Hinson
+* Author URI: http://outthinkgroup.com
+* @version 1.0
+*     Copyright 2013 - Out:think Group  (email : joseph@outthinkgroup.com)
+* 
+*     This program is free software; you can redistribute it and/or modify
+*     it under the terms of the GNU General Public License as published by
+*     the Free Software Foundation; either version 2 of the License, or
+*     (at your option) any later version.
+* 
+*     This program is distributed in the hope that it will be useful,
+*     but WITHOUT ANY WARRANTY; without even the implied warranty of
+*     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*     GNU General Public License for more details.
+* 
+*     You should have received a copy of the GNU General Public License
+*     along with this program; if not, write to the Free Software
+*     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+* */
 
 /**
 * OT Events
 */
-class Imprint_Events
+class Outthink_Events
 {
 	
 	public function __construct()
@@ -44,7 +44,7 @@ class Imprint_Events
 		// initializes the widget on WordPress Load
 		add_action('widgets_init', array($this, 'widget_init'));
 		/* hook updater to init */
-		add_action( 'init', 'mybooks_plugin_updater_init' );
+		add_action( 'init', array($this, 'events_plugin_updater_init') );
 	}
 
 	/**
@@ -129,7 +129,7 @@ class Imprint_Events
 	}
 	// Should be called above from "add_action"
 	function widget_init() {
-		register_widget( 'OT_Events' );
+		register_widget( 'OT_Events_Widget' );
 	}
 	
 	
@@ -352,13 +352,13 @@ class Imprint_Events
 		update_post_meta($post_id, 'ot_e_time', $ot_e_time);	
 	}
 	
-} // end class imprint_events
+} // end class Outthink_Events
 
 // This is a widget for Upcoming Events	
 // new class to extend WP_Widget function
-class OT_Events extends WP_Widget {
+class OT_Events_Widget extends WP_Widget {
 	/** Widget setup.  */
-	function OT_Events() {
+	function OT_Events_Widget() {
 		/* Widget settings. */
 		$widget_ops = array(
 			'classname' => 'ot_events_widget',
@@ -466,4 +466,4 @@ function form($instance) {
 	}
 } // END OT_Events
 
-$ImprintEvents = new Imprint_Events();
+$OutthinkEvents = new Outthink_Events();
