@@ -53,12 +53,12 @@ class Outthink_Events
 	function events_plugin_updater_init() {
 		/* Load Plugin Updater */
 		require_once( trailingslashit( plugin_dir_path( __FILE__ ) ) . 'includes/plugin-updater.php' );
-
+		$userinfo = get_option('ot-plugin-validation');
 		/* Updater Config */
 		$config = array(
 			'base'      => plugin_basename( __FILE__ ), //required
-			'username'    => true, // user login name in your site.
-			'dashboard'   => true,
+			'username'    => $userinfo['user'], // user login name in your site.
+			'key' => $userinfo['email'],
 			'repo_uri'  => 'http://outthinkgroup.com/',
 			'repo_slug' => 'outthink-events',
 		);
@@ -467,3 +467,5 @@ function form($instance) {
 } // END OT_Events
 
 $OutthinkEvents = new Outthink_Events();
+
+require_once( trailingslashit( plugin_dir_path( __FILE__ ) ) . 'includes/options.php' );
