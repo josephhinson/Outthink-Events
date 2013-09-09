@@ -6,7 +6,7 @@
 * Version: 1.0
 * Author: Joseph Hinson
 * Author URI: http://outthinkgroup.com
-* @version 1.0
+* 
 *     Copyright 2013 - Out:think Group  (email : joseph@outthinkgroup.com)
 * 
 *     This program is free software; you can redistribute it and/or modify
@@ -65,6 +65,7 @@ class Outthink_Events
 
 		/* Load Updater Class */
 		new OTEvents_Plugin_Updater( $config );
+//		$this->updater = new OTEvents_Plugin_Updater( $config );
 	}
 	
 	function init() {
@@ -146,7 +147,6 @@ class Outthink_Events
 				line-height: 21px;
 				padding-bottom: 2px;
 				border-bottom: 1px solid #434343;
-				text-transform: uppercase;
 				font-weight: normal;
 				text-align: left;
 			}
@@ -186,7 +186,6 @@ class Outthink_Events
 			}
 			.ot_event_list tr.month td {
 				font-size: 24px;
-				text-transform: uppercase;
 				border-bottom: 0px;
 				padding-top: 20px;
 				font-weight:normal;
@@ -210,53 +209,52 @@ class Outthink_Events
 		    <th>Event</th>
 		    <th class="e_details">Details</th>
 		  </tr>';
-			$var = array();
+		$var = array();
 		foreach($ot_events as $event) :
-
-			$origDate = get_post_meta($event->ID, 'ot_e_date', true);
-			$month = date('F', $origDate);
-			$day = date('j', $origDate);
-			$eventTime = $origDate;
-			$venue = $event->post_title;
-			$link = get_post_meta($event->ID, 'ot_e_link', true);
-			$location = get_post_meta($event->ID, 'ot_e_location', true); 
-			$details = $event->post_content;
-			$time = get_post_meta($event->ID, 'ot_e_time', true);
-				$editlink = '';
-			if (is_user_logged_in()) {
-				$editlink = '<span class="edit_link"><a href="'.get_edit_post_link( $event->ID).'">Edit This Event</a></span>';	
-			}
-			// Let's check to see if this date is not already passed:
-			if ($origDate > strtotime('yesterday')) {
-				$return = '
-				<tr class="ot_e_data">
-				    <td class="e_date">'.$day.'</td>
-				    <td class="e_location">'.$location.'</td>
-				    <td class="e_venue">'.$venue.'</td>
-					<td class="e_details">'.apply_filters('the_content', $details);
-				// this should be pretty self-explanitory
-
-				if ($time or $link) {
-					$return .= '<span class="event_details">';
-					// if time exists:
-					if ($time) {
-						$return .= '<span class="event_time">'.$time.'</span>';
-					}
-					//if we are creating a string with the two:
-					if ($time and $link) {
-						$return .= ' - ';
-					}				
-					// if link exists:
-					if ($link) {
-						$return.= '<span class="event_link"><a href="'.$link.'" target="_blank">More Info &rarr;</a></span>';
-					}
-					$return .= '</span>'.$editlink;
+			$origDate = get_post_meta($event->ID, 'ot_e_date', true);			
+			if ($origDate) {
+				$month = date('F', $origDate);
+				$day = date('j', $origDate);
+				$eventTime = $origDate;
+				$venue = $event->post_title;
+				$link = get_post_meta($event->ID, 'ot_e_link', true);
+				$location = get_post_meta($event->ID, 'ot_e_location', true); 
+				$details = $event->post_content;
+				$time = get_post_meta($event->ID, 'ot_e_time', true);
+					$editlink = '';
+				if (is_user_logged_in()) {
+					$editlink = '<span class="edit_link"><a href="'.get_edit_post_link( $event->ID).'">Edit This Event</a></span>';
 				}
-				$return.='</td>
-				  </tr>';
-				$var[$eventTime] = $return;
-			} // endif
-	
+				// Let's check to see if this date is not already passed:
+				if ($origDate > strtotime('yesterday')) {
+					$return = '
+					<tr class="ot_e_data">
+					    <td class="e_date">'.$day.'</td>
+					    <td class="e_location">'.$location.'</td>
+					    <td class="e_venue">'.$venue.'</td>
+						<td class="e_details">'.apply_filters('the_content', $details);
+					// this should be pretty self-explanitory
+					if ($time or $link) {
+						$return .= '<span class="event_details">';
+						// if time exists:
+						if ($time) {
+							$return .= '<span class="event_time">'.$time.'</span>';
+						}
+						//if we are creating a string with the two:
+						if ($time and $link) {
+							$return .= ' - ';
+						}				
+						// if link exists:
+						if ($link) {
+							$return.= '<span class="event_link"><a href="'.$link.'" target="_blank">More Info &rarr;</a></span>';
+						}
+						$return .= '</span>'.$editlink;
+					}
+					$return.='</td>
+					  </tr>';
+					$var[$eventTime] = $return;
+				} // endif
+			} // end check for date
 			endforeach;
 			ksort($var);
 			$currentMonth = '';
@@ -405,15 +403,14 @@ class OT_Events_Widget extends WP_Widget {
 				$link = get_post_meta($event->ID, 'ot_e_link', true);
 				// checking to make sure the date is NOT
 				if ($date > strtotime('today') && $c <= 3) { ?>
-					<div class="post">					
+					<div class="ot-event-post">					
 						<h4><?php echo $event->post_title; ?></h4>
 						<?php if ($date or $link or $location): ?>
 							<p>
 							<?php if (!empty($location)): ?>
-								<?php echo $location; ?>
+								<?php echo $location; ?><br />
 							<?php endif; ?>
-						
-							<?php if (!empty($date)): ?><br />
+							<?php if (!empty($date)): ?>
 								<span class="date">
 								 <?php echo date('l, F jS, Y', $date); ?></span><br />
 								 <span class="time"><?php echo get_post_meta($event->ID, 'ot_e_time', true); ?></span>
@@ -469,3 +466,4 @@ function form($instance) {
 $OutthinkEvents = new Outthink_Events();
 
 require_once( trailingslashit( plugin_dir_path( __FILE__ ) ) . 'includes/options.php' );
+include 'includes/ot-nlsignup.php';

@@ -50,5 +50,46 @@ class OT_Events_Settings{
 	    </div>
 	    <?php
 	}
+	public function active() {
+		/* get wp version */
+		global $wp_version;
+		$otpu =  new OTEvents_Plugin_Updater();		
+		$updater_data =$otpu->updater->updater_data();
+
+		/* get current domain */
+		$domain = $updater_data['domain'];
+		$userinfo = get_option('ot-plugin-validation');
+		$key = $userinfo['email'];
+		$username = $userinfo['user'];
+
+		$valid = "invalid";
+
+		if( empty($key) || empty($username) ) return $valid;
+
+		/* Get data from server */
+		$remote_url = add_query_arg( array( 'plugin_repo' => $updater_data['repo_slug'], 'ahr_check_key' => 'validate_key' ), $updater_data['repo_uri'] );
+		$remote_request = array( 'timeout' => 20, 'body' => array( 'key' => md5( $key ), 'login' => $username, 'autohosted' => $updater_data['autohosted'] ), 'user-agent' => 'WordPress/' . $wp_version . '; ' . $updater_data['domain'] );
+		$raw_response = wp_remote_post( $remote_url, $remote_request );
+
+		/* get response */
+		$response = '';
+		if ( !is_wp_error( $raw_response ) && ( $raw_response['response']['code'] == 200 ) )
+			$response = trim( wp_remote_retrieve_body( $raw_response ) );
+
+		/* if call to server sucess */
+		if ( !empty( $response ) ){
+
+			/* if key is valid */
+			if ( $response == 'valid' ) $valid = 'valid';
+
+			/* if key is not valid */
+			elseif ( $response == 'invalid' ) $valid = 'invalid';
+
+			/* if response is value is not recognized */
+			else $valid = 'unrecognized';
+		}
+
+		return $valid;
+	}
 }
 $OT_Events_Settings = new OT_Events_Settings();
