@@ -373,6 +373,7 @@ class OT_Events_Widget extends WP_Widget {
 	function widget( $args, $instance ) {
 		extract( $args );
 		$title = apply_filters('widget_title', $instance['title'] );
+		$number = $instance['number'];
 
 		/* Before widget (defined by themes). */
 		echo $before_widget;
@@ -386,12 +387,13 @@ class OT_Events_Widget extends WP_Widget {
 		<?php
 		// TODO: Create Parameters for the events so that there's more to it.
 		// loading up the $events variable to pass as argument to the get_posts, will order by meta value.
+		
 		$events = array(
 			'post_type' => 'event',
 			'orderby' => 'meta_value',
 			'order' => 'ASC',
 			'meta_key' => 'ot_e_date',
-			'posts_per_page' => '-1'
+			'posts_per_page' => '-1',
 		);
 		$events = get_posts($events);
 		$c = 1;
@@ -402,7 +404,7 @@ class OT_Events_Widget extends WP_Widget {
 				$location = get_post_meta($event->ID, 'ot_e_location', true);
 				$link = get_post_meta($event->ID, 'ot_e_link', true);
 				// checking to make sure the date is NOT
-				if ($date > strtotime('today') && $c <= 3) { ?>
+				if ($date > strtotime('today') && $c <= $number) { ?>
 					<div class="ot-event-post">					
 						<h4><?php echo $event->post_title; ?></h4>
 						<?php if ($date or $link or $location): ?>
@@ -442,6 +444,7 @@ class OT_Events_Widget extends WP_Widget {
 
 		/* Strip tags for title and name to remove HTML (important for text inputs). */
 		$instance['title'] = strip_tags( $new_instance['title'] );
+		$instance['number'] = $new_instance['number'];
 
 		return $instance;
 	}
@@ -452,12 +455,19 @@ class OT_Events_Widget extends WP_Widget {
  * when creating your form elements. This handles the confusing stuff.
 */
 function form($instance) {
-	$defaults = array( 'title' => __('Upcoming Events', 'ot_events_widget'));
+	$defaults = array( 
+		'title' => __('Upcoming Events', 'ot_events_widget'),
+		'number' => '3',
+	);
 	$instance = wp_parse_args( (array) $instance, $defaults ); ?>
 	<!-- Widget Title: Text Input -->
 	<p>
 		<label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e('Title:', 'ot_events_widget'); ?></label><br>
 		<input type="text" class="widefat" id="<?php echo $this->get_field_id( 'title' ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" value="<?php echo $instance['title']; ?>">
+	</p>
+	<p>
+		<label for="<?php echo $this->get_field_id( 'number' ); ?>"><?php _e('Number of Events:', 'ot_events_widget'); ?></label><br>
+		<input type="text" class="widefat" id="<?php echo $this->get_field_id( 'number' ); ?>" name="<?php echo $this->get_field_name( 'number' ); ?>" value="<?php echo $instance['number']; ?>">
 	</p>
 	<?php
 	}
