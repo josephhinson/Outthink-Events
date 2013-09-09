@@ -41,7 +41,7 @@ class OT_Events_Settings{
 
 	function options_page() { ?>
 	    <div class="wrap">
-	        <h2>Out:think Reviews Options</h2>
+	        <h2>Out:think Events Options</h2>
 	        <form action="options.php" method="POST">
 	            <?php settings_fields( 'ot_events' ); ?>
 	            <?php do_settings_sections( 'ot_events' ); ?>
