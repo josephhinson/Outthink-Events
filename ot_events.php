@@ -140,136 +140,226 @@ class Outthink_Events
 		global $post;
 		$ot_events = get_posts('numberposts=-1&meta_key=ot_e_date&orderby=meta_value&order=ASC&post_type=event&post_status=publish'); 
 		$master_return = ''; // this is the variable that actually gets returned.
-		$master_return = '
+		ob_start(); ?>
 		<style type="text/css" media="screen">
-			.ot_event_list th {
-				font-size: 14px;
-				line-height: 21px;
-				padding-bottom: 2px;
-				border-bottom: 1px solid #434343;
-				font-weight: normal;
-				text-align: left;
+
+		.cbp_tmtimeline {
+			margin: 30px 0 0 0;
+			padding: 0;
+			list-style: none;
+			position: relative;
+		} 
+		.cbp_tmtimeline li {
+			position: relative;
+		}
+		/* The line */
+		.cbp_tmtimeline:before {
+			content: '';
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			width: 10px;
+			background: #afdcf8;
+			left: 20%;
+			margin-left: -10px;
+		}
+
+		/* The date/time */
+		.cbp_tmtimeline > li .cbp_tmtime {
+			display: block;
+			width: 25%;
+			padding-right: 100px;
+			position: absolute;
+		}
+
+		.cbp_tmtimeline > li .cbp_tmtime span {
+			display: block;
+			text-align: right;
+		}
+
+		.cbp_tmtimeline > li .cbp_tmtime span:first-child {
+			font-size: 0.9em;
+			color: #bdd0db;
+		}
+
+		.cbp_tmtimeline > li .cbp_tmtime span:last-child {
+			font-size: 2.9em;
+			color: #3594cb;
+		}
+
+		.cbp_tmtimeline > li:nth-child(odd) .cbp_tmtime span:last-child {
+			color: #6cbfee;
+		}
+
+		/* Right content */
+		.cbp_tmtimeline > li .cbp_tmlabel {
+			margin: 0 0 15px 25%;
+			background: #3594cb;
+			color: #fff;
+			padding: 2em;
+			font-size: 1.2em;
+			font-weight: 300;
+			line-height: 1.4;
+			position: relative;
+			border-radius: 5px;
+		}
+
+		.cbp_tmtimeline > li:nth-child(odd) .cbp_tmlabel {
+			background: #6cbfee;
+		}
+
+		.cbp_tmtimeline > li .cbp_tmlabel h2 { 
+			margin-top: 0px;
+			padding: 0 0 10px 0;
+			border-bottom: 1px solid rgba(255,255,255,0.4);
+		}
+
+		/* The triangle */
+		.cbp_tmtimeline > li .cbp_tmlabel:after {
+			right: 100%;
+			border: solid transparent;
+			content: " ";
+			height: 0;
+			width: 0;
+			position: absolute;
+			pointer-events: none;
+			border-right-color: #3594cb;
+			border-width: 10px;
+			top: 10px;
+		}
+
+		.cbp_tmtimeline > li:nth-child(odd) .cbp_tmlabel:after {
+			border-right-color: #6cbfee;
+		}
+
+		/* The icons */
+		.cbp_tmtimeline > li .cbp_tmicon {
+			width: 40px;
+			height: 40px;
+			speak: none;
+			font-style: normal;
+			font-weight: normal;
+			font-variant: normal;
+			text-transform: none;
+			font-size: 1.4em;
+			line-height: 40px;
+			-webkit-font-smoothing: antialiased;
+			position: absolute;
+			color: #fff;
+			background: #46a4da;
+			border-radius: 50%;
+			box-shadow: 0 0 0 8px #afdcf8;
+			text-align: center;
+			left: 20%;
+			top: 0;
+			margin: 0 0 0 -25px;
+		}
+
+		.cbp_tmicon-phone:before {
+			content: "\e000";
+		}
+
+		.cbp_tmicon-screen:before {
+			content: "\e001";
+		}
+
+		.cbp_tmicon-mail:before {
+			content: "\e002";
+		}
+
+		.cbp_tmicon-earth:before {
+			content: "\e003";
+		}
+
+		/* Example Media Queries */
+		@media screen and (max-width: 65.375em) {
+
+			.cbp_tmtimeline > li .cbp_tmtime span:last-child {
+				font-size: 1.5em;
 			}
-			.ot_event_list td.e_date {
-				width: 10%;
-			}
-			.ot_event_list td.e_location {
-				width: 15%;
-			}
-			.ot_event_list td.e_details {
-				width: 40%;
-			}
-			.ot_event_list td.e_venue {
-				width: 20%;
-			}
-			.ot_event_list .e_details span.event_details {
-				display: block;
-				margin-top: 7px;
-			}
-			.ot_event_list td {
-				border-bottom: 1px solid #434343;
-				padding-bottom: 10px;
-				padding-top: 10px;
-				line-height: 17px;
-				font-size: 13px;
-				padding-right: 10px;
-				vertical-align: top;
+		}
+
+		@media screen and (max-width: 47.2em) {
+			.cbp_tmtimeline:before {
+				display: none;
 			}
 
-			.ot_event_list td.e_date {
-				font-size: 24px;
-				line-height: 24px;
-				padding-left:10px
+			.cbp_tmtimeline > li .cbp_tmtime {
+				width: 100%;
+				position: relative;
+				padding: 0 0 20px 0;
 			}
-			td.even {
-				background: #f5f5f5;
+
+			.cbp_tmtimeline > li .cbp_tmtime span {
+				text-align: left;
 			}
-			.ot_event_list tr.month td {
-				font-size: 24px;
-				border-bottom: 0px;
-				padding-top: 20px;
-				font-weight:normal;
-				padding-bottom: 14px;
-				border-bottom: 1px solid #434343;
+
+			.cbp_tmtimeline > li .cbp_tmlabel {
+				margin: 0 0 30px 0;
+				padding: 1em;
+				font-weight: 400;
+				font-size: 95%;
 			}
-			.event_link a {
-				text-decoration: underline;
+
+			.cbp_tmtimeline > li .cbp_tmlabel:after {
+				right: auto;
+				left: 20px;
+				border-right-color: transparent;
+				border-bottom-color: #3594cb;
+				top: -20px;
 			}
-	
+
+			.cbp_tmtimeline > li:nth-child(odd) .cbp_tmlabel:after {
+				border-right-color: transparent;
+				border-bottom-color: #6cbfee;
+			}
+
+			.cbp_tmtimeline > li .cbp_tmicon {
+				position: relative;
+				float: right;
+				left: auto;
+				margin: -55px 5px 0 0px;
+			}	
+		}
+
+			
 		</style>
-		<script>
-		jQuery(document).ready(function() {
-			jQuery("tr.ot_e_data:even td").addClass("even");
-		});
-		</script>
-		<table width="100%" border="0" cellspacing="0" cellpadding="0" class="ot_event_list">
-		  <tr>
-		    <th>Date</th>
-		    <th>Location</th>
-		    <th>Event</th>
-		    <th class="e_details">Details</th>
-		  </tr>';
-		$var = array();
-		foreach($ot_events as $event) :
-			$origDate = get_post_meta($event->ID, 'ot_e_date', true);			
-			if ($origDate) {
-				$month = date('F', $origDate);
-				$day = date('j', $origDate);
-				$eventTime = $origDate;
-				$venue = $event->post_title;
-				$link = get_post_meta($event->ID, 'ot_e_link', true);
-				$location = get_post_meta($event->ID, 'ot_e_location', true); 
-				$details = $event->post_content;
-				$time = get_post_meta($event->ID, 'ot_e_time', true);
+		<ul class="cbp_tmtimeline">
+			<?php foreach ($ot_events as $event):
+				$origDate = get_post_meta($event->ID, 'ot_e_date', true);			
+				if ($origDate) {
+					$month = date('F', $origDate);
+					$day = date('j', $origDate);
+					$eventTime = $origDate;
+					$venue = $event->post_title;
+					$link = get_post_meta($event->ID, 'ot_e_link', true);
+					$location = get_post_meta($event->ID, 'ot_e_location', true); 
+					$details = $event->post_content;
+					$time = get_post_meta($event->ID, 'ot_e_time', true);
 					$editlink = '';
-				if (is_user_logged_in()) {
-					$editlink = '<span class="edit_link"><a href="'.get_edit_post_link( $event->ID).'">Edit This Event</a></span>';
-				}
-				// Let's check to see if this date is not already passed:
-				if ($origDate > strtotime('yesterday')) {
-					$return = '
-					<tr class="ot_e_data">
-					    <td class="e_date">'.$day.'</td>
-					    <td class="e_location">'.$location.'</td>
-					    <td class="e_venue">'.$venue.'</td>
-						<td class="e_details">'.apply_filters('the_content', $details);
-					// this should be pretty self-explanitory
-					if ($time or $link) {
-						$return .= '<span class="event_details">';
-						// if time exists:
-						if ($time) {
-							$return .= '<span class="event_time">'.$time.'</span>';
-						}
-						//if we are creating a string with the two:
-						if ($time and $link) {
-							$return .= ' - ';
-						}				
-						// if link exists:
-						if ($link) {
-							$return.= '<span class="event_link"><a href="'.$link.'" target="_blank">More Info &rarr;</a></span>';
-						}
-						$return .= '</span>'.$editlink;
+					if (is_user_logged_in()) {
+						$editlink = ' <span class="edit_link"><a href="'.get_edit_post_link( $event->ID).'">Edit This Event</a></span>';
 					}
-					$return.='</td>
-					  </tr>';
-					$var[$eventTime] = $return;
-				} // endif
-			} // end check for date
-			endforeach;
-			ksort($var);
-			$currentMonth = '';
-			foreach($var as $key => $value) {
-				$month = date('F',$key);
-				if (strcmp($month, $currentMonth) != 0) {
-					$master_return .= '
-				<tr class="month august">
-				    <td colspan="5">'.$month.'</td>
-				  </tr>';
-					$currentMonth = $month;
-				}
-				$master_return .= $value;
-			}
-			$master_return .= '</table>';
+					// Let's check to see if this date is not already passed:
+					if ($origDate > strtotime('yesterday')) {
+						$dtime = date('Y-m-d h:ia', $origDate);
+						$dmy = date('n/d/y', $origDate);
+						$time = date('h:ia', $origDate);
+				?>
+				<li>
+					<time class="cbp_tmtime" datetime="<?php echo $dtime; ?>"><span><?php echo $dmy;?></span> <span><?php echo $time; ?></span></time>
+					<div class="cbp_tmicon fa fa-calendar"></div>
+					<div class="cbp_tmlabel">
+						<h2><?php echo $event->post_title; ?></h2>
+						<p><?php echo $event->post_content; ?><?php echo $editlink; ?></p>
+					</div>
+				</li>
+				
+				<?php  } // endif
+			} // endif ?>
+			<?php endforeach;
+
+		$master_return = ob_get_clean();
 			return $master_return;
 	}
 	
@@ -300,7 +390,7 @@ class Outthink_Events
 			</p>
 			<p>
 				<label for="ot_e_date">Event Date <small>(accepts logical dates, like March 1, 2012, or 03/01/2012)</small></label><br>
-				<input type="text" name="ot_e_date" value="<? if (!empty($ot_e_date)) { echo date('m/d/Y',$ot_e_date); } ?>" id="ot_e_date">
+				<input type="text" name="ot_e_date" value="<? if (!empty($ot_e_date)) { echo date('m/d/Y h:ia',$ot_e_date); } ?>" id="ot_e_date">
 			</p>
 			<p>
 				<label for="ot_e_link">Event Link: <small>Please include http:// or the link will result in a 404 on your site</small></label><br>
