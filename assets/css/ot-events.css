@@ -1,0 +1,74 @@
+/* Out:Think Events — [events] shortcode table. */
+.ot_event_list {
+	width: 100%;
+	border-collapse: collapse;
+	border: 0;
+}
+
+/* Themes often add table/cell borders; keep only the horizontal row rules. */
+table.ot_event_list,
+table.ot_event_list th,
+table.ot_event_list td {
+	border-top: 0;
+	border-left: 0;
+	border-right: 0;
+}
+
+.ot_event_list th {
+	font-size: 14px;
+	line-height: 21px;
+	padding-bottom: 2px;
+	border-bottom: 1px solid #434343;
+	font-weight: normal;
+	text-align: left;
+}
+
+.ot_event_list td {
+	border-bottom: 1px solid #434343;
+	padding-bottom: 10px;
+	padding-top: 10px;
+	line-height: 17px;
+	font-size: 13px;
+	padding-right: 10px;
+	vertical-align: top;
+}
+
+.ot_event_list td.e_date {
+	width: 10%;
+	font-size: 24px;
+	line-height: 24px;
+	padding-left: 10px;
+}
+
+.ot_event_list td.e_location {
+	width: 15%;
+}
+
+.ot_event_list td.e_venue {
+	width: 20%;
+}
+
+.ot_event_list td.e_details {
+	width: 40%;
+}
+
+.ot_event_list .e_details span.event_details {
+	display: block;
+	margin-top: 7px;
+}
+
+.ot_event_list tr.even td {
+	background: #f5f5f5;
+}
+
+.ot_event_list tr.month td {
+	font-size: 24px;
+	padding-top: 20px;
+	font-weight: normal;
+	padding-bottom: 14px;
+	border-bottom: 1px solid #434343;
+}
+
+.ot_event_list .event_link a {
+	text-decoration: underline;
+}
