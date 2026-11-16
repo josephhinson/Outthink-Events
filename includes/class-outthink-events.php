@@ -102,6 +102,7 @@ class Outthink_Events {
 		);
 
 		$meta = array(
+			'ot_e_venue'    => array( 'string', 'sanitize_text_field' ),
 			'ot_e_location' => array( 'string', 'sanitize_text_field' ),
 			'ot_e_link'     => array( 'string', 'esc_url_raw' ),
 			'ot_e_time'     => array( 'string', 'sanitize_text_field' ),
@@ -169,6 +170,8 @@ class Outthink_Events {
 			'post_status'    => 'publish',
 			'posts_per_page' => $args['limit'] > 0 ? (int) $args['limit'] : -1,
 			'no_found_rows'  => true,
+			// Private events stay in lists; templates show them without details.
+			Outthink_Events_Privacy::INCLUDE_PRIVATE => true,
 			'meta_query'     => array(
 				'event_date' => array(
 					'key'     => 'ot_e_date',
@@ -222,13 +225,15 @@ class Outthink_Events {
 			}
 		}
 
-		$expires = $timestamp ? self::expires_at( $timestamp ) : 0;
+		$expires    = $timestamp ? self::expires_at( $timestamp ) : 0;
+		$is_private = Outthink_Events_Privacy::is_private( $post );
 
 		$event = array(
 			'id'               => $post->ID,
 			'title'            => get_the_title( $post ),
 			'content'          => $with_content ? apply_filters( 'the_content', $post->post_content ) : '',
 			'excerpt'          => has_excerpt( $post ) ? get_the_excerpt( $post ) : '',
+			'venue'            => (string) get_post_meta( $post->ID, 'ot_e_venue', true ),
 			'location'         => (string) get_post_meta( $post->ID, 'ot_e_location', true ),
 			'time'             => (string) get_post_meta( $post->ID, 'ot_e_time', true ),
 			'timestamp'        => $timestamp,
@@ -246,8 +251,10 @@ class Outthink_Events {
 			'permalink'        => $permalink,
 			'venue_url'        => $venue_url,
 			'link_to'          => $link_to,
-			'details_url'      => 'venue' === $link_to ? $venue_url : $permalink,
-			'details_external' => 'venue' === $link_to,
+			// Private events have no page to link to.
+			'details_url'      => $is_private ? '' : ( 'venue' === $link_to ? $venue_url : $permalink ),
+			'details_external' => ! $is_private && 'venue' === $link_to,
+			'is_private'       => $is_private,
 			'categories'       => $categories,
 			'edit_url'         => current_user_can( 'edit_post', $post->ID ) ? get_edit_post_link( $post->ID, 'raw' ) : '',
 			// Print on the element that represents this event so it can roll off on cached pages.
@@ -317,42 +324,47 @@ class Outthink_Events {
 		wp_nonce_field( 'ot_events_save', self::NONCE );
 
 		$date     = (int) get_post_meta( $post->ID, 'ot_e_date', true );
+		$venue    = get_post_meta( $post->ID, 'ot_e_venue', true );
 		$location = get_post_meta( $post->ID, 'ot_e_location', true );
 		$link     = get_post_meta( $post->ID, 'ot_e_link', true );
 		$time     = get_post_meta( $post->ID, 'ot_e_time', true );
 		$link_to  = self::get_link_to( $post->ID );
 		?>
-		<p>
-			<label for="ot_e_location"><?php esc_html_e( 'Event Location', 'outthink-events' ); ?></label><br>
-			<input type="text" class="regular-text" name="ot_e_location" id="ot_e_location" value="<?php echo esc_attr( $location ); ?>">
-		</p>
-		<p>
-			<label for="ot_e_date"><?php esc_html_e( 'Event Date', 'outthink-events' ); ?></label><br>
-			<input type="text" class="regular-text" name="ot_e_date" id="ot_e_date" autocomplete="off"
-				placeholder="<?php esc_attr_e( 'e.g. March 1, 2027 · 3/1/27 · next Friday', 'outthink-events' ); ?>"
-				value="<?php echo $date ? esc_attr( gmdate( 'F j, Y', $date ) ) : ''; ?>">
-			<br><span id="ot_e_date_preview" class="description" aria-live="polite">
-			<?php
-			if ( $date ) {
-				echo esc_html( self::describe_date( $date ) );
-			}
-			?>
-			</span>
-		</p>
-		<p>
-			<label for="ot_e_time"><?php esc_html_e( 'Event Time', 'outthink-events' ); ?> <small><?php esc_html_e( '(freeform, e.g. 7pm ET or 9-5pm)', 'outthink-events' ); ?></small></label><br>
-			<input type="text" class="regular-text" name="ot_e_time" id="ot_e_time" value="<?php echo esc_attr( $time ); ?>">
-		</p>
-		<p>
-			<label for="ot_e_link"><?php esc_html_e( 'Venue Link', 'outthink-events' ); ?></label><br>
-			<input type="url" class="large-text" name="ot_e_link" id="ot_e_link" placeholder="https://" value="<?php echo esc_attr( $link ); ?>">
-		</p>
-		<fieldset>
-			<legend><?php esc_html_e( 'Details link to', 'outthink-events' ); ?></legend>
-			<label><input type="radio" name="ot_e_link_to" value="local" <?php checked( $link_to, 'local' ); ?>> <?php esc_html_e( 'Local details page', 'outthink-events' ); ?></label><br>
-			<label><input type="radio" name="ot_e_link_to" value="venue" <?php checked( $link_to, 'venue' ); ?>> <?php esc_html_e( 'Venue link', 'outthink-events' ); ?></label>
-			<p class="description"><?php esc_html_e( 'Where "More Info" links in event lists go. Uses the local page if there is no venue link.', 'outthink-events' ); ?></p>
-		</fieldset>
+		<div class="ot-events-fields">
+			<div class="ot-events-field">
+				<label for="ot_e_venue"><?php esc_html_e( 'Venue', 'outthink-events' ); ?></label>
+				<input type="text" name="ot_e_venue" id="ot_e_venue" placeholder="<?php esc_attr_e( 'e.g. The Fox Theatre', 'outthink-events' ); ?>" value="<?php echo esc_attr( $venue ); ?>">
+			</div>
+			<div class="ot-events-field">
+				<label for="ot_e_location"><?php esc_html_e( 'Event Location', 'outthink-events' ); ?></label>
+				<input type="text" name="ot_e_location" id="ot_e_location" placeholder="<?php esc_attr_e( 'e.g. St Louis, MO', 'outthink-events' ); ?>" value="<?php echo esc_attr( $location ); ?>">
+			</div>
+
+			<div class="ot-events-field">
+				<label for="ot_e_date"><?php esc_html_e( 'Event Date', 'outthink-events' ); ?></label>
+				<input type="text" name="ot_e_date" id="ot_e_date" autocomplete="off"
+					placeholder="<?php esc_attr_e( 'e.g. March 1, 2027 · 3/1/27 · next Friday', 'outthink-events' ); ?>"
+					value="<?php echo $date ? esc_attr( gmdate( 'F j, Y', $date ) ) : ''; ?>">
+				<span id="ot_e_date_preview" class="description" aria-live="polite"><?php echo $date ? esc_html( self::describe_date( $date ) ) : ''; ?></span>
+			</div>
+			<div class="ot-events-field">
+				<label for="ot_e_time"><?php esc_html_e( 'Event Time', 'outthink-events' ); ?></label>
+				<input type="text" name="ot_e_time" id="ot_e_time" placeholder="<?php esc_attr_e( 'Freeform, e.g. 7pm ET or 9–5pm', 'outthink-events' ); ?>" value="<?php echo esc_attr( $time ); ?>">
+			</div>
+
+			<div class="ot-events-field">
+				<label for="ot_e_link"><?php esc_html_e( 'Venue Link', 'outthink-events' ); ?></label>
+				<input type="url" name="ot_e_link" id="ot_e_link" placeholder="https://" value="<?php echo esc_attr( $link ); ?>">
+			</div>
+			<fieldset class="ot-events-field">
+				<legend><?php esc_html_e( 'Details link to', 'outthink-events' ); ?></legend>
+				<div class="ot-events-radios">
+					<label><input type="radio" name="ot_e_link_to" value="local" <?php checked( $link_to, 'local' ); ?>> <?php esc_html_e( 'Local details page', 'outthink-events' ); ?></label>
+					<label><input type="radio" name="ot_e_link_to" value="venue" <?php checked( $link_to, 'venue' ); ?>> <?php esc_html_e( 'Venue link', 'outthink-events' ); ?></label>
+				</div>
+				<span class="description"><?php esc_html_e( 'Where "More Info" links in event lists go. Uses the local page if there is no venue link.', 'outthink-events' ); ?></span>
+			</fieldset>
+		</div>
 		<?php
 	}
 
@@ -374,6 +386,7 @@ class Outthink_Events {
 		}
 
 		$fields = array(
+			'ot_e_venue'    => sanitize_text_field( wp_unslash( $_POST['ot_e_venue'] ?? '' ) ),
 			'ot_e_location' => sanitize_text_field( wp_unslash( $_POST['ot_e_location'] ?? '' ) ),
 			'ot_e_link'     => esc_url_raw( wp_unslash( $_POST['ot_e_link'] ?? '' ) ),
 			'ot_e_time'     => sanitize_text_field( wp_unslash( $_POST['ot_e_time'] ?? '' ) ),
@@ -457,6 +470,7 @@ class Outthink_Events {
 		if ( ! in_array( $hook_suffix, array( 'post.php', 'post-new.php' ), true ) || self::POST_TYPE !== get_current_screen()->post_type ) {
 			return;
 		}
+		wp_enqueue_style( 'ot-events-admin', OT_EVENTS_URL . 'assets/css/ot-events-admin.css', array(), OT_EVENTS_VERSION );
 		wp_enqueue_script( 'ot-events-admin', OT_EVENTS_URL . 'assets/js/ot-events-admin.js', array(), OT_EVENTS_VERSION, true );
 		wp_localize_script(
 			'ot-events-admin',

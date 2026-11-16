@@ -1,6 +1,6 @@
 # Out:Think Events — how the plugin works
 
-WordPress plugin (v1.2.0) for managing upcoming events. It shows them through a shortcode, a block and a widget, and adds a details box to single event pages. Lists stay correct even when pages are served from a cache: past events disappear in the browser, and fresh data is loaded from a REST endpoint.
+WordPress plugin (v1.3.0) for managing upcoming events. It shows them through a shortcode, a block and a widget, and adds a details box to single event pages. Lists stay correct even when pages are served from a cache: past events disappear in the browser, and fresh data is loaded from a REST endpoint.
 
 Use this guide when designing the front end. It describes the data each template receives, the exact HTML produced today, the markers that must stay for roll-off to work, and the CSS hooks.
 
@@ -11,6 +11,7 @@ Use this guide when designing the front end. It describes the data each template
 | `ot_events.php` | Plugin header and loader |
 | `includes/class-outthink-events.php` | Post type, taxonomy, meta, editor box, date parsing, queries, `prepare_event()` |
 | `includes/class-outthink-events-display.php` | Rendering, shortcodes, block registration, single-page details, REST endpoint |
+| `includes/class-outthink-events-privacy.php` | Private events (see §2a) |
 | `includes/class-ot-events-widget.php` | Classic widget |
 | `templates/list.php` | **Event list markup** (shortcode + block) |
 | `templates/widget.php` | Widget body markup |
@@ -33,12 +34,13 @@ Each event is a post of type **`event`** (admin menu: **Events**), edited in the
 | Title | Post title | |
 | Description | Post content | Full editor HTML |
 | Excerpt | Post excerpt | Optional |
-| Location | Meta `ot_e_location` | Plain text, e.g. `St Louis, MO` |
+| Venue | Meta `ot_e_venue` | Plain text name of the place, e.g. `The Fox Theatre` |
+| Location | Meta `ot_e_location` | Plain text city/area, e.g. `St Louis, MO` |
 | Date | Meta `ot_e_date` | Unix timestamp, midnight UTC of the event day. Typed as freeform text ("March 1", "3/1/27", "next Friday") with a live preview; a year-less date that has passed rolls to next year |
 | Time | Meta `ot_e_time` | Freeform text, e.g. `12pm ET`, `9–5pm` (not parsed) |
 | Venue link | Meta `ot_e_link` | Optional external URL |
 | Details link to | Meta `ot_e_link_to` | `local` (the event's own page) or `venue` (the venue link). Defaults to `venue` when a venue link exists; always falls back to `local` without one |
-| Categories | Taxonomy `event-category` | Hierarchical; used for filtering lists |
+| Categories | Taxonomy `event-category` | Hierarchical; used for filtering lists. The `private` category makes an event private (§2a) |
 
 **Which events appear in lists:** published, with a date of today or later (site timezone), soonest first (ties by title). Undated events never appear in lists.
 
@@ -59,6 +61,25 @@ Single event pages live at `/event/{slug}/`, categories at `/event-category/{slu
 
 ---
 
+## 2a. Private events
+
+Events in the **`private`** event category still appear in upcoming lists, so the date and city show. Nothing else on the site reveals them to visitors (anyone who can't edit posts):
+
+- Their `/event/{slug}/` page returns a 404.
+- They're left out of search, feeds, category archives, other front-end post queries and WordPress core sitemaps.
+- They're left out of the Yoast SEO sitemap.
+- Previous/next links on other event pages skip them.
+- The public `/wp/v2/event` REST API hides them.
+- In templates, `$event['is_private']` is true and `details_url` is empty. The plugin's list and widget templates show "Private Event" with the date and location only (row/card class `is-private`). The theme's list override does the same.
+
+Editors still see and can preview private events everywhere. To use different category slugs:
+
+```php
+add_filter( 'ot_events_private_categories', fn() => array( 'private', 'closed-door' ) );
+```
+
+---
+
 ## 3. Template data
 
 `templates/list.php` and `templates/widget.php` receive:
@@ -76,6 +97,7 @@ Each prepared event is an array (escape on output; `content` is already-rendered
 | `title` | `Local Event` | |
 | `content` | `<p>Hangin with my homies.</p>` | Rendered post content. **List view only**; empty in widget and single |
 | `excerpt` | `''` | Manual excerpt or empty |
+| `venue` | `The Fox Theatre` | May be empty |
 | `location` | `St Louis, MO` | May be empty |
 | `time` | `12pm ET` | May be empty |
 | `timestamp` | `1803945600` | Midnight UTC of the event day |
@@ -95,6 +117,7 @@ Each prepared event is an array (escape on output; `content` is already-rendered
 | `link_to` | `venue` | `local` or `venue` (resolved, see data model) |
 | `details_url` | `https://theplace.com` | **Use this for "More Info" links**: the venue link or the event page, per the editor's choice |
 | `details_external` | `true` | True when `details_url` is the venue link (open in new tab) |
+| `is_private` | `false` | True for events in a private category. Show only the date and location; `details_url` is empty |
 | `categories` | `[['name'=>'Speaking','slug'=>'speaking']]` | |
 | `edit_url` | `''` | Admin edit link; only set for logged-in users who can edit |
 | `attributes` | ` data-ot-expires="1803967200"` | Must be printed on the element for each event (see §4) |
@@ -147,8 +170,11 @@ The script fires a bubbling `ot-events:updated` event on the wrapper after each 
 
     <tr class="ot_e_data even" data-ot-expires="1803967200">  <!-- one per event -->
       <td class="e_date">1</td>
-      <td class="e_location">St Louis, MO</td>
-      <td class="e_venue">Local Event</td>
+      <td class="e_location">
+        <span class="event_venue">The Fox Theatre</span>   <!-- only if venue -->
+        <span class="event_location">St Louis, MO</span>   <!-- only if location -->
+      </td>
+      <td class="e_event">Local Event</td>
       <td class="e_details">
         <p>Hangin with my homies.</p>
         <span class="event_details">                       <!-- only if time and/or link -->
@@ -174,7 +200,8 @@ The script fires a bubbling `ot-events:updated` event on the wrapper after each 
 <div class="ot-event-post" data-ot-expires="1803967200">
   <h4>Local Event</h4>
   <p>
-    St Louis, MO<br>
+    <span class="venue">The Fox Theatre</span><br>      <!-- only if venue -->
+    <span class="location">St Louis, MO</span><br>      <!-- only if location -->
     <span class="date">Monday, March 1st, 2027</span><br>
     <span class="time">12pm ET</span>
     <br><strong><a href="…">Learn More »</a></strong>
@@ -192,13 +219,14 @@ The theme supplies the widget wrapper and title. The widget has no CSS of its ow
   <dl>
     <dt>Date</dt>     <dd class="ot-event-details__date"><time datetime="2027-03-01">Monday, March 1st, 2027</time></dd>
     <dt>Time</dt>     <dd class="ot-event-details__time">12pm ET</dd>
+    <dt>Venue</dt>    <dd class="ot-event-details__venue">The Fox Theatre</dd>
     <dt>Location</dt> <dd class="ot-event-details__location">St Louis, MO</dd>
   </dl>
   <p class="ot-event-details__link"><a href="…" target="_blank" rel="noopener">Event Website →</a></p>
 </div>
 ```
 
-Rows without data are omitted, and the box isn't printed at all if the event has no date, time, location or link. It appears above the post content; the theme still prints the title and content.
+Rows without data are omitted, and the box isn't printed at all if the event has no date, time, venue, location or link. It appears above the post content; the theme still prints the title and content.
 
 ---
 
@@ -206,7 +234,7 @@ Rows without data are omitted, and the box isn't printed at all if the event has
 
 Style handle `ot-events`. It's loaded wherever a list or the details box appears (not for the widget).
 
-- **List table:** full width, horizontal rules only (`1px solid #434343`), theme vertical borders removed. 13px body, 14px headers, 24px day number and month headings, zebra rows `tr.even td { background: #f5f5f5 }`. Column widths: date 10%, location 15%, event 20%, details 40%.
+- **List table:** full width, horizontal rules only (`1px solid #434343`), theme vertical borders removed. 13px body, 14px headers, 24px day number and month headings, zebra rows `tr.even td { background: #f5f5f5 }`. Column widths: date 10%, location 15%, event 20%, details 40%. In the location column, venue and city sit on separate lines with the venue in semibold.
 - **Empty state:** italic paragraph.
 - **Details box:** light grey panel with a dark left border, label/value grid.
 - `.ot-events [hidden] { display: none !important }` so themes can't un-hide rolled-off parts.
@@ -223,6 +251,7 @@ The theme's own fonts, colors and link styles apply on top. To fully replace the
 | `ot_events_prepare_event` | filter | Add/alter template data (`$event, $post`) |
 | `ot_events_template` | filter | Point a template name at another file (`$file, $name`) |
 | `ot_events_auto_single_details` | filter | Return `false` to stop the automatic details box (`$show, $post`) |
+| `ot_events_private_categories` | filter | Category slugs that make an event private (default `['private']`) |
 
 `Outthink_Events::get_upcoming_events( ['limit' => 5, 'category' => ['speaking']] )` and `Outthink_Events::prepare_event( $post )` can be used directly in custom code.
 

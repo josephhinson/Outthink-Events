@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! $event['timestamp'] && ! $event['time'] && ! $event['location'] && ! $event['venue_url'] ) {
+if ( ! $event['timestamp'] && ! $event['time'] && ! $event['venue'] && ! $event['location'] && ! $event['venue_url'] ) {
 	return;
 }
 ?>
@@ -30,6 +30,10 @@ if ( ! $event['timestamp'] && ! $event['time'] && ! $event['location'] && ! $eve
 		<?php if ( $event['time'] ) : ?>
 			<dt><?php esc_html_e( 'Time', 'outthink-events' ); ?></dt>
 			<dd class="ot-event-details__time"><?php echo esc_html( $event['time'] ); ?></dd>
+		<?php endif; ?>
+		<?php if ( $event['venue'] ) : ?>
+			<dt><?php esc_html_e( 'Venue', 'outthink-events' ); ?></dt>
+			<dd class="ot-event-details__venue"><?php echo esc_html( $event['venue'] ); ?></dd>
 		<?php endif; ?>
 		<?php if ( $event['location'] ) : ?>
 			<dt><?php esc_html_e( 'Location', 'outthink-events' ); ?></dt>

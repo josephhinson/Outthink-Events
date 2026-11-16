@@ -1,0 +1,82 @@
+/* Out:Think Events: Event Details box on the event edit screen. */
+.ot-events-fields {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 16px 0;
+	padding: 4px 0;
+}
+
+/* Column divider: a rule down the middle between the left and right fields. */
+.ot-events-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+	margin: 0;
+	padding: 0 16px;
+	border: 0;
+}
+
+.ot-events-field:nth-child(odd) {
+	padding-left: 0;
+	border-right: 1px solid #dcdcde;
+}
+
+.ot-events-field:nth-child(even) {
+	padding-right: 0;
+}
+
+.ot-events-field > label,
+.ot-events-field > legend {
+	font-weight: 600;
+	padding: 0;
+	margin-bottom: 6px;
+}
+
+.ot-events-field > legend {
+	float: left;
+	width: 100%;
+}
+
+.ot-events-field input[type="text"],
+.ot-events-field input[type="url"] {
+	width: 100%;
+	max-width: none;
+	margin: 0;
+}
+
+.ot-events-radios {
+	clear: both;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 20px;
+	min-height: 30px;
+	align-items: center;
+}
+
+.ot-events-field .description:empty {
+	display: none;
+}
+
+/* Narrow screens and the editor's narrow sidebar placement: one column. */
+@media (max-width: 782px) {
+	.ot-events-fields {
+		grid-template-columns: 1fr;
+	}
+
+	.ot-events-field,
+	.ot-events-field:nth-child(odd),
+	.ot-events-field:nth-child(even) {
+		padding: 0;
+		border-right: 0;
+	}
+}
+
+#side-sortables .ot-events-fields {
+	grid-template-columns: 1fr;
+}
+
+#side-sortables .ot-events-field {
+	padding: 0;
+	border-right: 0;
+}

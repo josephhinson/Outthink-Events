@@ -43,12 +43,23 @@ $row = 0;
 			<td colspan="4"><?php echo esc_html( $month_events[0]['month'] ); ?></td>
 		</tr>
 		<?php foreach ( $month_events as $event ) : ?>
-		<tr class="ot_e_data<?php echo ( 0 === $row++ % 2 ) ? ' even' : ''; ?>"<?php echo $event['attributes']; // phpcs:ignore WordPress.Security.EscapeOutput -- built by prepare_event(). ?>>
+		<tr class="ot_e_data<?php echo ( 0 === $row++ % 2 ) ? ' even' : ''; ?><?php echo $event['is_private'] ? ' is-private' : ''; ?>"<?php echo $event['attributes']; // phpcs:ignore WordPress.Security.EscapeOutput -- built by prepare_event(). ?>>
 			<td class="e_date"><?php echo esc_html( $event['day'] ); ?></td>
-			<td class="e_location"><?php echo esc_html( $event['location'] ); ?></td>
-			<td class="e_venue"><?php echo esc_html( $event['title'] ); ?></td>
+			<td class="e_location">
+				<?php if ( $event['venue'] && ! $event['is_private'] ) : ?>
+					<span class="event_venue"><?php echo esc_html( $event['venue'] ); ?></span>
+				<?php endif; ?>
+				<?php if ( $event['location'] ) : ?>
+					<span class="event_location"><?php echo esc_html( $event['location'] ); ?></span>
+				<?php endif; ?>
+			</td>
+			<td class="e_event"><?php echo $event['is_private'] ? esc_html__( 'Private Event', 'outthink-events' ) : esc_html( $event['title'] ); ?></td>
 			<td class="e_details">
-				<?php echo $event['content']; // phpcs:ignore WordPress.Security.EscapeOutput -- the_content output. ?>
+				<?php
+				if ( ! $event['is_private'] ) {
+					echo $event['content']; // phpcs:ignore WordPress.Security.EscapeOutput -- the_content output.
+				}
+				?>
 				<?php if ( $event['time'] || $event['details_url'] ) : ?>
 				<span class="event_details">
 					<?php if ( $event['time'] ) : ?>

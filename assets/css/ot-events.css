@@ -44,8 +44,17 @@ table.ot_event_list td {
 	width: 15%;
 }
 
-.ot_event_list td.e_venue {
+.ot_event_list td.e_event {
 	width: 20%;
+}
+
+.ot_event_list .e_location .event_venue,
+.ot_event_list .e_location .event_location {
+	display: block;
+}
+
+.ot_event_list .e_location .event_venue {
+	font-weight: 600;
 }
 
 .ot_event_list td.e_details {

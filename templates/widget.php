@@ -14,11 +14,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 <p class="ot-events__empty" data-ot-empty<?php echo $events ? ' hidden' : ''; ?>><?php esc_html_e( 'No upcoming events.', 'outthink-events' ); ?></p>
 <?php foreach ( $events as $event ) : ?>
-<div class="ot-event-post"<?php echo $event['attributes']; // phpcs:ignore WordPress.Security.EscapeOutput -- built by prepare_event(). ?>>
-	<h4><?php echo esc_html( $event['title'] ); ?></h4>
+<div class="ot-event-post<?php echo $event['is_private'] ? ' is-private' : ''; ?>"<?php echo $event['attributes']; // phpcs:ignore WordPress.Security.EscapeOutput -- built by prepare_event(). ?>>
+	<h4><?php echo $event['is_private'] ? esc_html__( 'Private Event', 'outthink-events' ) : esc_html( $event['title'] ); ?></h4>
 	<p>
+		<?php if ( $event['venue'] && ! $event['is_private'] ) : ?>
+			<span class="venue"><?php echo esc_html( $event['venue'] ); ?></span><br>
+		<?php endif; ?>
 		<?php if ( $event['location'] ) : ?>
-			<?php echo esc_html( $event['location'] ); ?><br>
+			<span class="location"><?php echo esc_html( $event['location'] ); ?></span><br>
 		<?php endif; ?>
 		<span class="date"><?php echo esc_html( $event['date_label'] ); ?></span><br>
 		<span class="time"><?php echo esc_html( $event['time'] ); ?></span>

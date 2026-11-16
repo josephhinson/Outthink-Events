@@ -3,7 +3,7 @@
  * Plugin Name:       Out:Think Events
  * Plugin URI:        https://outthinkgroup.com/
  * Description:       A simple way to add events and show them in an upcoming list that stays current, even on cached pages.
- * Version:           1.2.0
+ * Version:           1.3.0
  * Requires at least: 6.3
  * Requires PHP:      7.4
  * Author:            Joseph Hinson
@@ -30,17 +30,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'OT_EVENTS_VERSION', '1.2.0' );
+define( 'OT_EVENTS_VERSION', '1.3.0' );
 define( 'OT_EVENTS_FILE', __FILE__ );
 define( 'OT_EVENTS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OT_EVENTS_URL', plugin_dir_url( __FILE__ ) );
 
 require_once OT_EVENTS_DIR . 'includes/class-outthink-events.php';
 require_once OT_EVENTS_DIR . 'includes/class-outthink-events-display.php';
+require_once OT_EVENTS_DIR . 'includes/class-outthink-events-privacy.php';
 require_once OT_EVENTS_DIR . 'includes/class-ot-events-widget.php';
 
 $OutthinkEvents        = new Outthink_Events();
 $OutthinkEventsDisplay = new Outthink_Events_Display();
+$OutthinkEventsPrivacy = new Outthink_Events_Privacy();
 
 register_activation_hook(
 	__FILE__,
