@@ -1,6 +1,6 @@
 # Out:Think Events — how the plugin works
 
-WordPress plugin (v1.3.0) for managing upcoming events. It shows them through a shortcode, a block and a widget, and adds a details box to single event pages. Lists stay correct even when pages are served from a cache: past events disappear in the browser, and fresh data is loaded from a REST endpoint.
+WordPress plugin (v1.4.0) for managing upcoming events. It shows them through a shortcode, a block and a widget, and adds a details box to single event pages. Lists stay correct even when pages are served from a cache: past events disappear in the browser, and fresh data is loaded from a REST endpoint.
 
 Use this guide when designing the front end. It describes the data each template receives, the exact HTML produced today, the markers that must stay for roll-off to work, and the CSS hooks.
 
@@ -11,7 +11,7 @@ Use this guide when designing the front end. It describes the data each template
 | `ot_events.php` | Plugin header and loader |
 | `includes/class-outthink-events.php` | Post type, taxonomy, meta, editor box, date parsing, queries, `prepare_event()` |
 | `includes/class-outthink-events-display.php` | Rendering, shortcodes, block registration, single-page details, REST endpoint |
-| `includes/class-outthink-events-privacy.php` | Private events (see §2a) |
+| `includes/class-outthink-events-privacy.php` | Events without a page: private and "No link" (see §2a) |
 | `includes/class-ot-events-widget.php` | Classic widget |
 | `templates/list.php` | **Event list markup** (shortcode + block) |
 | `templates/widget.php` | Widget body markup |
@@ -39,7 +39,7 @@ Each event is a post of type **`event`** (admin menu: **Events**), edited in the
 | Date | Meta `ot_e_date` | Unix timestamp, midnight UTC of the event day. Typed as freeform text ("March 1", "3/1/27", "next Friday") with a live preview; a year-less date that has passed rolls to next year |
 | Time | Meta `ot_e_time` | Freeform text, e.g. `12pm ET`, `9–5pm` (not parsed) |
 | Venue link | Meta `ot_e_link` | Optional external URL |
-| Details link to | Meta `ot_e_link_to` | `local` (the event's own page) or `venue` (the venue link). Defaults to `venue` when a venue link exists; always falls back to `local` without one |
+| Details link to | Meta `ot_e_link_to` | `local` (the event's own page), `venue` (the venue link) or `none` (no link, and **no event page**, see §2a). Defaults to `venue` when a venue link exists; `venue` falls back to `local` without one |
 | Categories | Taxonomy `event-category` | Hierarchical; used for filtering lists. The `private` category makes an event private (§2a) |
 
 **Which events appear in lists:** published, with a date of today or later (site timezone), soonest first (ties by title). Undated events never appear in lists.
@@ -61,18 +61,24 @@ Single event pages live at `/event/{slug}/`, categories at `/event-category/{slu
 
 ---
 
-## 2a. Private events
+## 2a. Events without a page: private and "No link"
 
-Events in the **`private`** event category still appear in upcoming lists, so the date and city show. Nothing else on the site reveals them to visitors (anyone who can't edit posts):
+Two kinds of event have no page of their own:
+
+- **No link:** "Details link to" set to **No link**. The event shows in lists in full (title, venue, city, time), just without a details link.
+- **Private:** in the **`private`** event category. Lists show only the date and city.
+
+Both still appear in upcoming lists. Nothing else on the site reveals them to visitors (anyone who can't edit posts):
 
 - Their `/event/{slug}/` page returns a 404.
 - They're left out of search, feeds, category archives, other front-end post queries and WordPress core sitemaps.
 - They're left out of the Yoast SEO sitemap.
 - Previous/next links on other event pages skip them.
 - The public `/wp/v2/event` REST API hides them.
-- In templates, `$event['is_private']` is true and `details_url` is empty. The plugin's list and widget templates show "Private Event" with the date and location only (row/card class `is-private`). The theme's list override does the same.
+- In templates, `$event['has_page']` is false and `details_url` is empty for both kinds.
+- For private events specifically, `$event['is_private']` is true and `details_url` is empty. The plugin's list and widget templates show "Private Event" with the date and location only (row/card class `is-private`). The theme's list override does the same.
 
-Editors still see and can preview private events everywhere. To use different category slugs:
+Editors still see and can preview these events everywhere. To use different category slugs:
 
 ```php
 add_filter( 'ot_events_private_categories', fn() => array( 'private', 'closed-door' ) );
@@ -114,10 +120,11 @@ Each prepared event is an array (escape on output; `content` is already-rendered
 | `expires` | `1803967200` | Unix time the event's day ends (site timezone) |
 | `permalink` | `https://site/event/local-event/` | Event's own page |
 | `venue_url` | `https://theplace.com` | May be empty |
-| `link_to` | `venue` | `local` or `venue` (resolved, see data model) |
-| `details_url` | `https://theplace.com` | **Use this for "More Info" links**: the venue link or the event page, per the editor's choice |
+| `link_to` | `venue` | `local`, `venue` or `none` (resolved, see data model) |
+| `details_url` | `https://theplace.com` | **Use this for "More Info" links**: the venue link or the event page, per the editor's choice. Empty for "No link" and private events, so print no link |
 | `details_external` | `true` | True when `details_url` is the venue link (open in new tab) |
 | `is_private` | `false` | True for events in a private category. Show only the date and location; `details_url` is empty |
+| `has_page` | `true` | False for private and "No link" events: their `/event/{slug}/` page 404s for visitors, so never link to `permalink` |
 | `categories` | `[['name'=>'Speaking','slug'=>'speaking']]` | |
 | `edit_url` | `''` | Admin edit link; only set for logged-in users who can edit |
 | `attributes` | ` data-ot-expires="1803967200"` | Must be printed on the element for each event (see §4) |

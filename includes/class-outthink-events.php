@@ -15,6 +15,7 @@ class Outthink_Events {
 	const POST_TYPE = 'event';
 	const TAXONOMY  = 'event-category';
 	const NONCE     = 'ot_events_noncename';
+	const LINK_TO   = array( 'local', 'venue', 'none' );
 
 	/** @var string Kept for backwards compatibility with code that read $OutthinkEvents->post_type. */
 	public $post_type = self::POST_TYPE;
@@ -227,6 +228,7 @@ class Outthink_Events {
 
 		$expires    = $timestamp ? self::expires_at( $timestamp ) : 0;
 		$is_private = Outthink_Events_Privacy::is_private( $post );
+		$has_page   = ! $is_private && 'none' !== $link_to;
 
 		$event = array(
 			'id'               => $post->ID,
@@ -252,8 +254,13 @@ class Outthink_Events {
 			'venue_url'        => $venue_url,
 			'link_to'          => $link_to,
 			// Private events have no page to link to.
-			'details_url'      => $is_private ? '' : ( 'venue' === $link_to ? $venue_url : $permalink ),
+			'details_url'      => $is_private ? '' : ( array(
+				'venue' => $venue_url,
+				'local' => $permalink,
+				'none'  => '',
+			)[ $link_to ] ),
 			'details_external' => ! $is_private && 'venue' === $link_to,
+			'has_page'         => $has_page,
 			'is_private'       => $is_private,
 			'categories'       => $categories,
 			'edit_url'         => current_user_can( 'edit_post', $post->ID ) ? get_edit_post_link( $post->ID, 'raw' ) : '',
@@ -276,7 +283,8 @@ class Outthink_Events {
 	}
 
 	/**
-	 * Where "details" links for an event go: 'local' (event page) or 'venue' (external link).
+	 * Where "details" links for an event go: 'local' (event page), 'venue' (external link)
+	 * or 'none' (no link, and the event has no page of its own).
 	 * Unset defaults to the venue link when there is one.
 	 *
 	 * @param int $post_id Event ID.
@@ -285,7 +293,7 @@ class Outthink_Events {
 	public static function get_link_to( $post_id ) {
 		$venue_url = get_post_meta( $post_id, 'ot_e_link', true );
 		$link_to   = get_post_meta( $post_id, 'ot_e_link_to', true );
-		if ( ! in_array( $link_to, array( 'local', 'venue' ), true ) ) {
+		if ( ! in_array( $link_to, self::LINK_TO, true ) ) {
 			$link_to = $venue_url ? 'venue' : 'local';
 		}
 		if ( 'venue' === $link_to && ! $venue_url ) {
@@ -299,7 +307,7 @@ class Outthink_Events {
 	 * @return string
 	 */
 	public static function sanitize_link_to( $value ) {
-		return in_array( $value, array( 'local', 'venue' ), true ) ? $value : '';
+		return in_array( $value, self::LINK_TO, true ) ? $value : '';
 	}
 
 	/* ---------------------------------------------------------------------
@@ -361,8 +369,9 @@ class Outthink_Events {
 				<div class="ot-events-radios">
 					<label><input type="radio" name="ot_e_link_to" value="local" <?php checked( $link_to, 'local' ); ?>> <?php esc_html_e( 'Local details page', 'outthink-events' ); ?></label>
 					<label><input type="radio" name="ot_e_link_to" value="venue" <?php checked( $link_to, 'venue' ); ?>> <?php esc_html_e( 'Venue link', 'outthink-events' ); ?></label>
+					<label><input type="radio" name="ot_e_link_to" value="none" <?php checked( $link_to, 'none' ); ?>> <?php esc_html_e( 'No link', 'outthink-events' ); ?></label>
 				</div>
-				<span class="description"><?php esc_html_e( 'Where "More Info" links in event lists go. Uses the local page if there is no venue link.', 'outthink-events' ); ?></span>
+				<span class="description"><?php esc_html_e( 'Where "More Info" links in event lists go. "No link" also turns off the event\'s own page. Venue link uses the local page if there is no venue link.', 'outthink-events' ); ?></span>
 			</fieldset>
 		</div>
 		<?php
