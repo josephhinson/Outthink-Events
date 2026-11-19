@@ -3,7 +3,7 @@
  * Plugin Name:       Out:Think Events
  * Plugin URI:        https://outthinkgroup.com/
  * Description:       A simple way to add events and show them in an upcoming list that stays current, even on cached pages.
- * Version:           1.4.0
+ * Version:           1.5.0
  * Requires at least: 6.3
  * Requires PHP:      7.4
  * Author:            Joseph Hinson
@@ -30,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'OT_EVENTS_VERSION', '1.4.0' );
+define( 'OT_EVENTS_VERSION', '1.5.0' );
 define( 'OT_EVENTS_FILE', __FILE__ );
 define( 'OT_EVENTS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OT_EVENTS_URL', plugin_dir_url( __FILE__ ) );

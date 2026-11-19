@@ -7,10 +7,12 @@
 	const { registerBlockType } = wp.blocks;
 	const { createElement: el, Fragment } = wp.element;
 	const { InspectorControls, useBlockProps } = wp.blockEditor;
-	const { PanelBody, RangeControl, CheckboxControl, Spinner } = wp.components;
+	const { PanelBody, RangeControl, CheckboxControl, SelectControl, Spinner } = wp.components;
 	const { useSelect } = wp.data;
 	const { __ } = wp.i18n;
 	const ServerSideRender = wp.serverSideRender;
+	// Layouts found in the theme/plugin (see Outthink_Events_Display::get_layouts()).
+	const layouts = ( window.otEventsBlock && window.otEventsBlock.layouts ) || [ { value: 'default', label: 'Default' } ];
 
 	function CategoryPicker( { selected, onChange } ) {
 		const terms = useSelect(
@@ -56,6 +58,16 @@
 					el(
 						PanelBody,
 						{ title: __( 'Events', 'outthink-events' ) },
+						el( SelectControl, {
+							label: __( 'Layout', 'outthink-events' ),
+							value: attributes.layout,
+							options: layouts.some( ( l ) => l.value === attributes.layout )
+								? layouts
+								: layouts.concat( [ { value: attributes.layout, label: attributes.layout + ' ' + __( '(not found)', 'outthink-events' ) } ] ),
+							help: __( 'Add layouts as outthink-events/list-{name}.php in your theme.', 'outthink-events' ),
+							onChange: ( layout ) => setAttributes( { layout } ),
+							__nextHasNoMarginBottom: true,
+						} ),
 						el( RangeControl, {
 							label: __( 'Number of events', 'outthink-events' ),
 							help: __( '0 shows all upcoming events.', 'outthink-events' ),

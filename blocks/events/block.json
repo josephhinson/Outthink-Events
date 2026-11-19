@@ -2,12 +2,16 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "outthink/events",
-	"version": "1.4.0",
+	"version": "1.5.0",
 	"title": "Upcoming Events",
 	"category": "widgets",
 	"icon": "calendar-alt",
 	"description": "A list of upcoming events that drops past events automatically, even on cached pages.",
-	"keywords": [ "events", "calendar", "schedule" ],
+	"keywords": [
+		"events",
+		"calendar",
+		"schedule"
+	],
 	"textdomain": "outthink-events",
 	"attributes": {
 		"limit": {
@@ -16,13 +20,22 @@
 		},
 		"category": {
 			"type": "array",
-			"items": { "type": "string" },
+			"items": {
+				"type": "string"
+			},
 			"default": []
+		},
+		"layout": {
+			"type": "string",
+			"default": "default"
 		}
 	},
 	"supports": {
 		"html": false,
-		"align": [ "wide", "full" ],
+		"align": [
+			"wide",
+			"full"
+		],
 		"spacing": {
 			"margin": true,
 			"padding": true

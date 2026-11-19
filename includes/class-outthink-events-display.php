@@ -32,6 +32,7 @@ class Outthink_Events_Display {
 		add_action( 'init', array( $this, 'register_assets' ), 5 );
 		add_action( 'init', array( $this, 'register_block' ) );
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
+		add_action( 'enqueue_block_editor_assets', array( $this, 'block_editor_data' ) );
 		add_filter( 'the_content', array( $this, 'add_single_details' ), 20 );
 		add_shortcode( 'events', array( $this, 'shortcode_events' ) );
 		add_shortcode( 'event_details', array( $this, 'shortcode_event_details' ) );
@@ -64,7 +65,7 @@ class Outthink_Events_Display {
 	 * Normalize list arguments from a shortcode, block or REST request.
 	 *
 	 * @param array $args Raw arguments.
-	 * @return array{limit: int, category: string[], view: string}
+	 * @return array{limit: int, category: string[], view: string, layout: string}
 	 */
 	public static function normalize_args( $args ) {
 		$args     = wp_parse_args(
@@ -73,6 +74,7 @@ class Outthink_Events_Display {
 				'limit'    => 0,
 				'category' => array(),
 				'view'     => 'list',
+				'layout'   => 'default',
 			)
 		);
 		$category = is_array( $args['category'] ) ? $args['category'] : explode( ',', (string) $args['category'] );
@@ -82,6 +84,7 @@ class Outthink_Events_Display {
 			'limit'    => max( 0, (int) $args['limit'] ),
 			'category' => $category,
 			'view'     => in_array( $args['view'], self::VIEWS, true ) ? $args['view'] : 'list',
+			'layout'   => sanitize_key( (string) $args['layout'] ) ? sanitize_key( (string) $args['layout'] ) : 'default',
 		);
 	}
 
@@ -99,6 +102,15 @@ class Outthink_Events_Display {
 		}
 		$html                 = self::render_template( $args['view'], $events, $args );
 		self::$rendering_list = false;
+
+		// Unknown layouts fall back to the default; leave editors a hint in the source.
+		if ( 'default' !== $args['layout'] && ! isset( self::get_layouts( $args['view'] )[ $args['layout'] ] ) && current_user_can( 'edit_posts' ) ) {
+			$html = sprintf(
+				'<!-- Out:Think Events: no "%1$s" layout found (looked for outthink-events/%2$s-%1$s.php); using the default. -->',
+				esc_html( $args['layout'] ),
+				esc_html( $args['view'] )
+			) . $html;
+		}
 
 		return array(
 			'html'  => $html,
@@ -123,9 +135,10 @@ class Outthink_Events_Display {
 		wp_enqueue_script( 'ot-events-front' );
 
 		$attributes = array(
-			'class'          => 'ot-events ot-events--' . $args['view'],
+			'class'          => 'ot-events ot-events--' . $args['view'] . ' ot-events--layout-' . $args['layout'],
 			'data-ot-events' => '',
 			'data-view'      => $args['view'],
+			'data-layout'    => $args['layout'],
 			'data-limit'     => (string) $args['limit'],
 			'data-category'  => implode( ',', $args['category'] ),
 		);
@@ -149,15 +162,90 @@ class Outthink_Events_Display {
 	/**
 	 * Find a template, preferring the theme's outthink-events/{name}.php.
 	 *
-	 * @param string $name Template name without extension.
+	 * With a layout, looks for {name}-{layout}.php first (a registered file, then the
+	 * child theme, parent theme and plugin), falling back to {name}.php.
+	 *
+	 * @param string $name   Template name without extension: list, widget or single.
+	 * @param string $layout Layout slug, or 'default'.
 	 * @return string Absolute path.
 	 */
-	public static function locate_template( $name ) {
-		$file = locate_template( 'outthink-events/' . $name . '.php' );
+	public static function locate_template( $name, $layout = 'default' ) {
+		$file = '';
+		if ( 'default' !== $layout ) {
+			$layouts = self::get_layouts( $name );
+			if ( isset( $layouts[ $layout ] ) ) {
+				$file = $layouts[ $layout ]['file'];
+			}
+		}
+		if ( ! $file ) {
+			$file = locate_template( 'outthink-events/' . $name . '.php' );
+		}
 		if ( ! $file ) {
 			$file = OT_EVENTS_DIR . 'templates/' . $name . '.php';
 		}
-		return apply_filters( 'ot_events_template', $file, $name );
+		return apply_filters( 'ot_events_template', $file, $name, $layout );
+	}
+
+	/**
+	 * Layouts available for a view, keyed by slug: ['label' => string, 'file' => string].
+	 *
+	 * Found automatically as outthink-events/{view}-{slug}.php in the child theme,
+	 * parent theme and plugin templates/ (in that order of priority). A
+	 * "Layout Name: Tour Dates" line in the file's header comment sets the label.
+	 * Plugins can add or change layouts with the `ot_events_layouts` filter.
+	 * "default" ({view}.php) is always available.
+	 *
+	 * @param string $view list or widget.
+	 * @return array<string, array{label: string, file: string}>
+	 */
+	public static function get_layouts( $view = 'list' ) {
+		// Cache the folder scan only; the filter runs on every call.
+		static $scanned = array();
+		if ( ! isset( $scanned[ $view ] ) ) {
+			$scanned[ $view ] = self::scan_layouts( $view );
+		}
+
+		$layouts = array(
+			'default' => array(
+				'label' => __( 'Default', 'outthink-events' ),
+				'file'  => '',
+			),
+		) + $scanned[ $view ];
+
+		return (array) apply_filters( 'ot_events_layouts', $layouts, $view );
+	}
+
+	/**
+	 * Find {view}-{slug}.php files in the plugin, parent theme and child theme.
+	 *
+	 * @param string $view list or widget.
+	 * @return array<string, array{label: string, file: string}>
+	 */
+	private static function scan_layouts( $view ) {
+		$found = array();
+		$dirs  = array_unique(
+			array(
+				OT_EVENTS_DIR . 'templates',
+				get_template_directory() . '/outthink-events',
+				get_stylesheet_directory() . '/outthink-events',
+			)
+		);
+		// Later directories win, so the child theme overrides the parent and the plugin.
+		foreach ( $dirs as $dir ) {
+			foreach ( (array) glob( $dir . '/' . $view . '-*.php' ) as $file ) {
+				$slug = sanitize_key( substr( basename( $file, '.php' ), strlen( $view ) + 1 ) );
+				if ( ! $slug || 'default' === $slug ) {
+					continue;
+				}
+				$header         = get_file_data( $file, array( 'label' => 'Layout Name' ) );
+				$found[ $slug ] = array(
+					'label' => $header['label'] ? $header['label'] : ucwords( str_replace( array( '-', '_' ), ' ', $slug ) ),
+					'file'  => $file,
+				);
+			}
+		}
+
+		return $found;
 	}
 
 	/**
@@ -167,7 +255,7 @@ class Outthink_Events_Display {
 	 * @return string
 	 */
 	private static function render_template( $name, $events, $args ) {
-		$file = self::locate_template( $name );
+		$file = self::locate_template( $name, $args['layout'] ?? 'default' );
 		ob_start();
 		( static function ( $events, $args ) use ( $file ) {
 			include $file;
@@ -190,6 +278,7 @@ class Outthink_Events_Display {
 			array(
 				'limit'    => 0,
 				'category' => '',
+				'layout'   => 'default',
 			),
 			$atts,
 			'events'
@@ -268,11 +357,30 @@ class Outthink_Events_Display {
 						array(
 							'limit'    => $attributes['limit'] ?? 0,
 							'category' => $attributes['category'] ?? array(),
+							'layout'   => $attributes['layout'] ?? 'default',
 						),
 						true
 					);
 				},
 			)
+		);
+	}
+
+	/**
+	 * Give the block's Layout dropdown the list of available layouts.
+	 */
+	public function block_editor_data() {
+		$options = array();
+		foreach ( self::get_layouts( 'list' ) as $slug => $layout ) {
+			$options[] = array(
+				'value' => $slug,
+				'label' => $layout['label'],
+			);
+		}
+		wp_add_inline_script(
+			generate_block_asset_handle( 'outthink/events', 'editorScript' ),
+			'window.otEventsBlock = ' . wp_json_encode( array( 'layouts' => $options ) ) . ';',
+			'before'
 		);
 	}
 
@@ -304,13 +412,18 @@ class Outthink_Events_Display {
 						'enum'    => self::VIEWS,
 						'default' => 'list',
 					),
+					'layout'   => array(
+						'type'    => 'string',
+						'pattern' => '^[a-z0-9_-]*$',
+						'default' => 'default',
+					),
 				),
 			)
 		);
 	}
 
 	/**
-	 * GET /wp-json/outthink-events/v1/events?limit=5&category=a,b&view=list
+	 * GET /wp-json/outthink-events/v1/events?limit=5&category=a,b&view=list&layout=cards
 	 *
 	 * Returns the inner list HTML. Sent with no-cache headers; the front-end script
 	 * also adds an hourly cache-busting parameter for hosts that cache the API anyway.
@@ -324,6 +437,7 @@ class Outthink_Events_Display {
 				'limit'    => $request['limit'],
 				'category' => $request['category'],
 				'view'     => $request['view'],
+				'layout'   => $request['layout'],
 			)
 		);
 		$inner = self::render_inner( $args );

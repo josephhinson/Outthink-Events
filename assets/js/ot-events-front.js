@@ -7,7 +7,7 @@
  *    which also picks up events added or edited since the page was cached.
  *
  * Markup contract (see templates/list.php):
- *   [data-ot-events]            list wrapper; data-view, data-limit, data-category, optional data-nonce
+ *   [data-ot-events]            list wrapper; data-view, data-layout, data-limit, data-category, optional data-nonce
  *   [data-ot-expires]           one event
  *   [data-ot-group]             removed when it no longer contains events (e.g. a month)
  *   [data-ot-empty]             shown when no events remain
@@ -48,6 +48,7 @@
 		}
 		const params = new URLSearchParams( {
 			view: root.dataset.view || 'list',
+			layout: root.dataset.layout || 'default',
 			limit: root.dataset.limit || '0',
 			category: root.dataset.category || '',
 			// Changes every hour, so a host that caches the API can't serve a stale list for long.

@@ -1,6 +1,6 @@
 # Out:Think Events — how the plugin works
 
-WordPress plugin (v1.4.0) for managing upcoming events. It shows them through a shortcode, a block and a widget, and adds a details box to single event pages. Lists stay correct even when pages are served from a cache: past events disappear in the browser, and fresh data is loaded from a REST endpoint.
+WordPress plugin (v1.5.0) for managing upcoming events. It shows them through a shortcode, a block and a widget, and adds a details box to single event pages. Lists stay correct even when pages are served from a cache: past events disappear in the browser, and fresh data is loaded from a REST endpoint.
 
 Use this guide when designing the front end. It describes the data each template receives, the exact HTML produced today, the markers that must stay for roll-off to work, and the CSS hooks.
 
@@ -21,7 +21,7 @@ Use this guide when designing the front end. It describes the data each template
 | `assets/js/ot-events-admin.js` | Live date preview in the editor (admin only) |
 | `blocks/events/` | "Upcoming Events" block (`block.json`, editor script; no build step) |
 
-**Redesigning = editing the three templates and the CSS.** All the data is prepared in PHP before the templates run, so a template is plain HTML with variables. A theme can also override any template by copying it to `yourtheme/outthink-events/{list|widget|single}.php`.
+**Redesigning = editing the three templates and the CSS.** All the data is prepared in PHP before the templates run, so a template is plain HTML with variables. A theme can also override any template by copying it to `yourtheme/outthink-events/{list|widget|single}.php`, and can add extra list designs as **layouts** (§2b).
 
 ---
 
@@ -50,8 +50,8 @@ Each event is a post of type **`event`** (admin menu: **Events**), edited in the
 
 | Output | How to place it | Options |
 |---|---|---|
-| Event list | Shortcode `[events]` | `limit="5"` (0 or omitted = all), `category="speaking,workshops"` (slugs; any match) |
-| Event list | Block **Upcoming Events** (`outthink/events`) | Sidebar: Number of events (0 = all), category checkboxes. Supports wide/full alignment, margin, padding |
+| Event list | Shortcode `[events]` | `limit="5"` (0 or omitted = all), `category="speaking,workshops"` (slugs; any match), `layout="tour"` (see §2b; omitted = default) |
+| Event list | Block **Upcoming Events** (`outthink/events`) | Sidebar: Layout dropdown, number of events (0 = all), category checkboxes. Supports wide/full alignment, margin, padding |
 | Event list (compact) | Widget **Upcoming Events Widget** | Title, number of events, category slugs |
 | Event details box | Automatically above the content on single event pages | Or place it manually with `[event_details]` (current event) or `[event_details id="123"]`. Manual placement turns off the automatic box on that page |
 
@@ -83,6 +83,50 @@ Editors still see and can preview these events everywhere. To use different cate
 ```php
 add_filter( 'ot_events_private_categories', fn() => array( 'private', 'closed-door' ) );
 ```
+
+---
+
+## 2b. Layouts: more than one list design
+
+A site can have several list designs and choose one per placement:
+
+```
+[events]                              → outthink-events/list.php (the default)
+[events layout="tour"]                → outthink-events/list-tour.php
+[events layout="tour" limit="3"]      → combines with limit and category
+```
+
+**Adding a layout:** create `list-{slug}.php` in the theme's `outthink-events/` folder. The slug is the part after `list-`: lowercase letters, numbers, `-` and `_`. It receives the same `$events` and `$args` as `list.php` (`$args['layout']` holds the slug) and must keep the roll-off markers in §4. Give it a readable name for the block's Layout dropdown with a header comment:
+
+```php
+<?php
+/**
+ * Layout Name: Tour Dates
+ */
+```
+
+**Where layouts are found**, highest priority first:
+
+1. Registered with the `ot_events_layouts` filter (any path, e.g. from another plugin)
+2. Child theme: `outthink-events/list-{slug}.php`
+3. Parent theme: `outthink-events/list-{slug}.php`
+4. Plugin: `templates/list-{slug}.php`
+
+```php
+add_filter( 'ot_events_layouts', function ( $layouts, $view ) {
+	if ( 'list' === $view ) {
+		$layouts['compact'] = array( 'label' => 'Compact', 'file' => __DIR__ . '/compact.php' );
+	}
+	return $layouts;
+}, 10, 2 );
+```
+
+**Behavior:**
+- `layout="default"` or no layout uses `list.php` (the theme's override if present, otherwise the plugin's).
+- An unknown slug falls back to the default. Logged-in editors get an HTML comment in the page source saying which file was looked for.
+- The cached-page refresh requests the same layout, so a list never switches design after loading.
+- The wrapper carries `data-layout="{slug}"` and the class `ot-events--layout-{slug}` for layout-specific CSS.
+- Layouts also work for the widget view (`widget-{slug}.php`) through the same lookup, though the widget settings don't offer a picker yet.
 
 ---
 
@@ -141,7 +185,7 @@ Each prepared event is an array (escape on output; `content` is already-rendered
 The plugin outputs the wrapper itself. Templates render only what goes inside it:
 
 ```html
-<div class="ot-events ot-events--list" data-ot-events data-view="list" data-limit="5" data-category="speaking">
+<div class="ot-events ot-events--list ot-events--layout-default" data-ot-events data-view="list" data-layout="default" data-limit="5" data-category="speaking">
   <!-- template output -->
 </div>
 ```
@@ -256,7 +300,8 @@ The theme's own fonts, colors and link styles apply on top. To fully replace the
 |---|---|---|
 | `ot_events_query_args` | filter | Change the `get_posts()` query (`$query, $args`) |
 | `ot_events_prepare_event` | filter | Add/alter template data (`$event, $post`) |
-| `ot_events_template` | filter | Point a template name at another file (`$file, $name`) |
+| `ot_events_template` | filter | Point a template at another file (`$file, $name, $layout`) |
+| `ot_events_layouts` | filter | Add, relabel or remove layouts (`$layouts, $view`); each is `slug => ['label' => …, 'file' => …]` |
 | `ot_events_auto_single_details` | filter | Return `false` to stop the automatic details box (`$show, $post`) |
 | `ot_events_private_categories` | filter | Category slugs that make an event private (default `['private']`) |
 
